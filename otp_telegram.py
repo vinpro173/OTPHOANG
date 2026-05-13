@@ -3,7 +3,6 @@ import email
 import re
 import requests
 import time
-
 import os
 
 EMAIL = os.getenv("EMAIL")
