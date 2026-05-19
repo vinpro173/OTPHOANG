@@ -11,7 +11,6 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
 IMAP_SERVER = "imap.gmail.com"
-
 last_otp = None
 
 def send_telegram(message):
@@ -25,15 +24,16 @@ def extract_otp(text):
     match = re.search(r'\b\d{6}\b', text)
     return match.group() if match else None
 
+def format_otp(otp):
+    return f"{otp[:3]} {otp[3:]}"  # "123456" → "123 456"
+
 def check_email():
     global last_otp
-
     mail = imaplib.IMAP4_SSL(IMAP_SERVER)
     mail.login(EMAIL, APP_PASSWORD)
     mail.select("inbox")
 
     status, messages = mail.search(None, 'ALL')
-
     email_ids = messages[0].split()
 
     if not email_ids:
@@ -41,13 +41,11 @@ def check_email():
         return
 
     latest_email_id = email_ids[-1]
-
     _, msg_data = mail.fetch(latest_email_id, "(RFC822)")
 
     for response_part in msg_data:
         if isinstance(response_part, tuple):
             msg = email.message_from_bytes(response_part[1])
-
             body = ""
 
             if msg.is_multipart():
@@ -63,15 +61,13 @@ def check_email():
                 ).decode(errors="ignore")
 
             otp = extract_otp(body)
-
             if otp and otp != last_otp:
-                send_telegram(f"🔐 OTP mới: {otp}")
+                send_telegram(f"🔐 OTP mới: {format_otp(otp)}")  # ← đã sửa
                 last_otp = otp
 
     mail.logout()
 
 print("Đang theo dõi email...")
-
 while True:
     try:
         check_email()
